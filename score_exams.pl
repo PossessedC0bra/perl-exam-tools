@@ -5,8 +5,6 @@ use strict;
 use warnings;
 use experimental;
 
-use lib ('./lib');
-
 #####################################################################
 
 # question -> {correct => $correct_answer, incorrect => @incorrect_answers}
@@ -100,7 +98,7 @@ for my $question_section (@sections) {
         next;
     }
 
-    
+
     if (   @checked_answers == 1
         && exists $question_to_answers{ $question[0] }
         && $question_to_answers{ $question[0] }->{correct} eq
