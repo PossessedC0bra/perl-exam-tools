@@ -3,112 +3,110 @@
 use v5.30.3;
 use strict;
 use warnings;
-use experimental;
+use experimental 'signatures';
 
-#####################################################################
-
-# question -> {correct => $correct_answer, incorrect => @incorrect_answers}
-our %question_to_answers;
-our $question_count;
+use lib './lib';
+use Exam::Parser 'parse_exam_file';
 
 #####################################################################
 
 # check command line arguments
 if ( @ARGV < 2 ) {
-    print(
-        "usage: score_exams.pl <PATH_TO_MASTER_FILE> [<PATH_TO_SUBMISSIONS>]");
+    print('usage: score_exams.pl <PATH_TO_MASTER_FILE> [<PATH_TO_SUBMISSIONS>]');
     exit(0);
 }
 
+my $master_filename            = $ARGV[0];
+my $master_file_map_ref        = parse_exam_file($master_filename);
+my %master_question_answer_map = %{ $master_file_map_ref->{QUESTIONS} };
+
 #####################################################################
-# START MASTER FILE PROCESSING
+# EXAM FILES PROCESSING
 #####################################################################
 
-# attempt to open master file for reading
-my $master_file_name = $ARGV[0];
-my $master_file_handle;
-if ( !open( $master_file_handle, "<", $master_file_name ) ) {
-    die "Failed to open $master_file_name";
+my @results;
+
+foreach my $exam_filename ( @ARGV[ 1 .. $#ARGV ] ) {
+    my $exam_file_map_ref        = parse_exam_file($exam_filename);
+    my %exam_question_answer_map = %{ $exam_file_map_ref->{QUESTIONS} };
+
+    my %result = (
+        FILENAME          => $exam_filename,
+        TOTAL_ANSWERS     => 0,
+        CORRECT_ANSWERS   => 0,
+        MISSING_QUESTIONS => [],
+        MISSING_ANSWERS   => {}
+    );
+
+    foreach my $question ( keys %master_question_answer_map ) {
+
+        # question not found -> remember as missing and proceed
+        if ( !exists $exam_question_answer_map{$question} ) {
+            push( @{ $result{MISSING_QUESTIONS} }, $question );
+            next;
+        }
+
+        # get the all checked answers
+        my @checked_answers = @{ $exam_question_answer_map{$question}{CHECKED} };
+
+        # no answer was provided -> ignore this question
+        if ( !@checked_answers ) {
+            next;
+        }
+
+        if ( @checked_answers == 1 && $master_question_answer_map{$question}{CHECKED}[0] eq $checked_answers[0] ) {
+            $result{CORRECT_ANSWERS}++;
+        }
+
+        $result{TOTAL_ANSWERS}++;
+    }
+
+    push( @results, \%result );
 }
 
-# read all of the master files content
-my $master_file_content = do {
-    local $/ = undef;
-    readline($master_file_handle);
-};
-
-# seperate master files content into sections (each delimited by a sequence of one or more -)
-my @sections = $master_file_content =~ m{ .*? ^_+$ }gmxs;
-
-# remove first element (header section) to have the array only contain question sections
-shift @sections;
-
-# create a mapping for each question to its correct and incorrect answers
-for my $question_section (@sections) {
-    my @question = $question_section =~ m {\d+\. (.*)}m;
-
-    my @correct_answer    = $question_section =~ m {\[X\] (.*)};
-    my @incorrect_answers = $question_section =~ m {\[ \] (.*)}g;
-
-    # store incorrect and correct answers for the question
-    $question_to_answers{ $question[0] } = {
-        correct   => $correct_answer[0],
-        incorrect => [@incorrect_answers]
-    };
-}
-
-close($master_file_handle);
-
-$question_count = keys %question_to_answers;
-
 #####################################################################
-# START EXAM FILES PROCESSING
+# RESULT PRINTING
 #####################################################################
 
-my $correct_answers = 0;
-my $total_answers   = 0;
+# print the score (correct- / total answers) for every file
+foreach my $result_ref (@results) {
 
-my $exam_file_name = $ARGV[1];
-my $exam_file_handle;
-if ( !open( $exam_file_handle, "<", $exam_file_name ) ) {
-    die "Failed to open $exam_file_name";
+    # deference for better readability
+    my %result = %{$result_ref};
+
+    printf( "%-70.70s %02s / %02s\n", $result{FILENAME}, $result{CORRECT_ANSWERS}, $result{TOTAL_ANSWERS} );
 }
 
-# read all of the exam files content
-my $exam_file_content = do {
-    local $/ = undef;
-    readline($exam_file_handle);
-};
+# empty line for better readability
+say('');
 
-# seperate master files content into sections (each delimited by a sequence of one or more -)
-@sections = $exam_file_content =~ m{ .*? ^_+$ }gmxs;
+# print missing questions and answers for every file
+foreach my $result_ref (@results) {
 
-# remove first element (header section) to have the array only contain question sections
-shift @sections;
+    # dereference for better readability
+    my %result = %{$result_ref};
 
-for my $question_section (@sections) {
-    # extract the question text
-    my @question = $question_section =~ m {\d+\. (.*)}m;
-
-    # get the checked answer
-    my @checked_answers = $question_section =~ m {\[X\] (.*)}g;
-
-    # no answer has been provided -> ignore this question
-    if ( !@checked_answer ) {
+    # print nothing for complete files
+    if ( !@{ $result{MISSING_QUESTIONS} } && !keys %{ $result{MISSING_ANSWERS} } ) {
         next;
     }
 
-
-    if (   @checked_answers == 1
-        && exists $question_to_answers{ $question[0] }
-        && $question_to_answers{ $question[0] }->{correct} eq
-        $checked_answers[0] )
-    {
-        $correct_answers++;
+    say("$result{FILENAME}:");
+    foreach my $missing_question ( @{ $result{MISSING_QUESTIONS} } ) {
+        say("\tMissing question: $missing_question");
     }
-    $total_answers++;
+
+    foreach my $missing_answers_map_ref ( keys %{ $result{MISSING_ANSWERS} } ) {
+
+        # deference for better readability
+        my %missing_answers_map = %{$missing_answers_map_ref};
+
+        say("\tMissing answers for question: $missing_answers_map{QUESTION}");
+        for my $missing_answer ( @{ $missing_answers_map{ANSWERS} } ) {
+            say("\t\t$missing_answer");
+        }
+    }
+
+    # print an empty line for better readability
+    say('');
 }
-
-close($exam_file_handle);
-
-say("$exam_file_name \t $correct_answers / $total_answers");
