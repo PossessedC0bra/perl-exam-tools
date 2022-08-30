@@ -14,8 +14,7 @@ our @EXPORT = ('parse_exam_file');
 
 my $SEPARATOR_REGEX = qr{^ _+ $}mx;
 
-my $QUESTION_REGEX              = qr { \d+ \. \s* (.*?) ^ \s* $  }msx;
-my $QUESTION_SANITIZATION_REGEX = qr { \n \s* }x;
+my $QUESTION_REGEX = qr { \d+ \. \s* (.*?) ^ \s* $  }msx;
 
 my $CHECKED_ANSWER_REGEX   = qr {\[ [Xx] \] \s* (.*) }x;
 my $UNCHECKED_ANSWER_REGEX = qr {\[ [ ] \] \s* (.*) }x;
@@ -41,8 +40,8 @@ sub parse_exam_file ($filename) {
             next;
         }
 
-        # sanitize question match (remove newlines and additional spaces)
-        my $question = $question_matches[0] =~ s {$QUESTION_SANITIZATION_REGEX} { }gr;
+        # sanitize question match (removes any unnecessary whitespace)
+        my $question = $question_matches[0] =~ s {\s+} { }gr;
 
         my @checked_answers   = $question_section =~ m{$CHECKED_ANSWER_REGEX}g;
         my @unchecked_answers = $question_section =~ m{$UNCHECKED_ANSWER_REGEX}g;
