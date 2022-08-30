@@ -40,21 +40,46 @@ foreach my $exam_filename ( @ARGV[ 1 .. $#ARGV ] ) {
 
     foreach my $question ( keys %master_question_answer_map ) {
 
-        # question not found -> remember as missing and proceed
+        # question not found -> remember as missing and move to the next one
         if ( !exists $exam_question_answer_map{$question} ) {
             push( @{ $result{MISSING_QUESTIONS} }, $question );
             next;
         }
 
-        # get the all checked answers
-        my @checked_answers = @{ $exam_question_answer_map{$question}{CHECKED} };
+        my @master_checked_answers = @{ $master_question_answer_map{$question}{CHECKED} };
+        my @exam_checked_answers   = @{ $exam_question_answer_map{$question}{CHECKED} };
+
+        # search for missing answers in exam file
+        my @missing_answers;
+
+        # collect all answers from master file
+        my @master_answers = ( @master_checked_answers, @{ $master_question_answer_map{$question}{UNCHECKED} } );
+
+        # collect all answers from exam file
+        my @exam_answers =
+          ( @exam_checked_answers, @{ $exam_question_answer_map{$question}{UNCHECKED} } );
+
+        # build map of answers in exam file for quick lookups
+        my %exam_answers_map = map( ( $_ => 1 ), @exam_answers );
+
+        # check master answers against the answers in the exam file
+        foreach my $master_answer (@master_answers) {
+            if ( !exists $exam_answers_map{$master_answer} ) {
+                push( @missing_answers, $master_answer );
+            }
+        }
+
+        # only create a missing answers entry if there are some
+        if (@missing_answers) {
+            $result{MISSING_ANSWERS}{$question} = [@missing_answers];
+        }
 
         # no answer was provided -> ignore this question
-        if ( !@checked_answers ) {
+        if ( !@exam_checked_answers ) {
             next;
         }
 
-        if ( @checked_answers == 1 && $master_question_answer_map{$question}{CHECKED}[0] eq $checked_answers[0] ) {
+        if ( @exam_checked_answers == 1 && $master_checked_answers[0] eq $exam_checked_answers[0] ) {
             $result{CORRECT_ANSWERS}++;
         }
 
@@ -96,14 +121,19 @@ foreach my $result_ref (@results) {
         say("\tMissing question: $missing_question");
     }
 
-    foreach my $missing_answers_map_ref ( keys %{ $result{MISSING_ANSWERS} } ) {
+    foreach my $question ( keys %{ $result{MISSING_ANSWERS} } ) {
 
         # deference for better readability
-        my %missing_answers_map = %{$missing_answers_map_ref};
+        my @missing_answers = @{ $result{MISSING_ANSWERS}{$question} };
 
-        say("\tMissing answers for question: $missing_answers_map{QUESTION}");
-        for my $missing_answer ( @{ $missing_answers_map{ANSWERS} } ) {
-            say("\t\t$missing_answer");
+        # only print message if there are missing answers
+        if ( !@missing_answers ) {
+            next;
+        }
+
+        say("\tMissing answers for question: $question");
+        for my $missing_answer (@missing_answers) {
+            say("\t\t- $missing_answer");
         }
     }
 
