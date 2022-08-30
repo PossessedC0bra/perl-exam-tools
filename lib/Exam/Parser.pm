@@ -17,7 +17,7 @@ my $SEPARATOR_REGEX = qr{^ _+ $}mx;
 my $QUESTION_REGEX              = qr { \d+ \. \s* (.*?) ^ \s* $  }msx;
 my $QUESTION_SANITIZATION_REGEX = qr { \n \s* }x;
 
-my $CHECKED_ANSWER_REGEX   = qr {\[ X \] \s* (.*) }x;
+my $CHECKED_ANSWER_REGEX   = qr {\[ [Xx] \] \s* (.*) }x;
 my $UNCHECKED_ANSWER_REGEX = qr {\[ [ ] \] \s* (.*) }x;
 
 ################################################################################
