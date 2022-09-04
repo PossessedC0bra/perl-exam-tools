@@ -10,7 +10,7 @@ use IO::Util 'read_file';
 use Regexp::Grammars;
 
 use Exporter 'import';
-our @EXPORT = ('load_exam');
+our @EXPORT = qw(load_exam);
 
 ################################################################################
 
