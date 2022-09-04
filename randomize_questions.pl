@@ -5,20 +5,18 @@ use strict;
 use warnings;
 use experimental;
 
+use Date::Util 'localtime_string_format';
+use Exam::Grammar 'load_exam';
+use IO::Util 'write_file';
+
 use List::Util 'shuffle';
+use File::Basename;
 
 #####################################################################
 
-# Returns the current localtime as string in the following foramt: YYYYMMDD-HHMMSS
-sub localtime_string() {
-    my ( $sec, $min, $hour, $mday, $mon, $year, $wday, $yday, $isdst ) =
-      localtime();
-    return sprintf(
-        "%04d%02d%02d-%02d%02d%02d",
-        $year + 1900,
-        $mon + 1, $mday, $hour, $min, $sec
-    );
-}
+my $NEWLINE               = "\n";
+my $SEPARATOR             = '_' x 80 . $NEWLINE;
+my $END_OF_EXAM_SEPARATOR = '=' x 80 . $NEWLINE;
 
 #####################################################################
 
@@ -29,50 +27,46 @@ if ( @ARGV < 1 ) {
 }
 
 # attempt to open master file for reading
-my $master_file_name = $ARGV[0];
-my $master_file_handle;
-if ( !open( $master_file_handle, "<", $master_file_name ) ) {
-    die "Failed to open $master_file_name";
+my $master_file_path = $ARGV[0];
+
+# extract the master files name from the given path
+my $master_filename = basename($master_file_path);
+
+# parse exam
+my %exam_map = %{ load_exam($master_file_path) };
+
+# store output files content into this scalar
+my $output_file_content;
+
+# 1st section is the header with information about the exam
+$output_file_content .= $exam_map{HEADER} . $NEWLINE . $NEWLINE;
+
+foreach my $question_ref ( @{ $exam_map{QUESTIONS} } ) {
+
+    # add a section separator and a newline character
+    $output_file_content .= $SEPARATOR;
+    $output_file_content .= $NEWLINE;
+
+    # write the question number and text
+    $output_file_content .= "$question_ref->{NUMBER}. $question_ref->{TEXT}" . $NEWLINE;
+
+    # add the answers in random order with an empty checkbox
+    foreach my $answer_ref ( shuffle( @{ $question_ref->{ANSWERS} } ) ) {
+        $output_file_content .= "\t[ ] $answer_ref->{TEXT}";
+    }
+
+    # separate from next section with two newlines
+    $output_file_content .= $NEWLINE . $NEWLINE;
 }
 
-# read all of the master files content
-my $master_file_content = do {
-    local $/ = undef;
-    readline($master_file_handle);
-};
+# add end of exam marker
+$output_file_content .= $END_OF_EXAM_SEPARATOR;
+$output_file_content .= '                                END OF EXAM';
+$output_file_content .= $NEWLINE;
+$output_file_content .= $END_OF_EXAM_SEPARATOR;
 
-# calculate output file name
-my $output_file_name = localtime_string() . "-$master_file_name";
+# current time as string in format YYYYMMDD-HHMMSS
+my $current_time_string = localtime_string_format( "%04d%02d%02d-%02d%02d%02d", localtime() );
+my $output_filename     = "$current_time_string-$master_filename";
 
-# open output file for writing
-my $output_file_handle;
-if ( !open( $output_file_handle, ">", $output_file_name ) ) {
-    die "Failed to open $output_file_name";
-}
-
-# seperate master files content into sections (each delimited by a sequence of one or more -)
-my @sections = $master_file_content =~ m{ .*? ^_+$ }gmxs;
-
-# 1st section is the header with information about the exam. we can simply print thatone into the new file
-print( $output_file_handle $sections[0] );
-for my $i ( 1 .. $#sections ) {
-    my $question = $sections[$i];
-
-    # replace correct answer checkbox with an empty one
-    $question =~ s{\[X\]} {\[ \]}g;
-
-    # extract all answers
-    my @answers = $question =~ m{([^\S\r\n]+\[ \].*\n)}g;
-
-    # shuffle answers and join them together into a single string
-    my $shuffled_answer_string = join( '', shuffle(@answers) );
-
-    # replace old answers with shuffled ones
-    $question =~ s{^[^\S\r\n]+\[ \].*?^$} {$shuffled_answer_string}ms;
-
-    # write the processed question (and answer) string into the file
-    print( $output_file_handle $question );
-}
-
-close($output_file_handle);
-close($master_file_handle);
+write_file( $output_filename, $output_file_content );
