@@ -5,8 +5,7 @@ use strict;
 use warnings;
 use experimental 'signatures';
 
-use lib './lib';
-use Exam::Parser 'parse_exam_file';
+use Exam::ScoringUtil 'build_question_answer_map';
 
 #####################################################################
 
@@ -16,28 +15,26 @@ if ( @ARGV < 2 ) {
     exit(0);
 }
 
-my $master_filename            = $ARGV[0];
-my $master_file_map_ref        = parse_exam_file($master_filename);
-my %master_question_answer_map = %{ $master_file_map_ref->{QUESTIONS} };
+my $master_file_path           = $ARGV[0];
+my %master_question_answer_map = %{ build_question_answer_map($master_file_path) };
 
-#####################################################################
-# EXAM FILES PROCESSING
-#####################################################################
-
+# store result for each file in this array
 my @results;
 
-foreach my $exam_filename ( @ARGV[ 1 .. $#ARGV ] ) {
-    my $exam_file_map_ref        = parse_exam_file($exam_filename);
-    my %exam_question_answer_map = %{ $exam_file_map_ref->{QUESTIONS} };
-
+# score each exam (arguments beyond the first) individually
+foreach my $exam_file_path ( @ARGV[ 1 .. $#ARGV ] ) {
     my %result = (
-        FILENAME          => $exam_filename,
+        FILE              => $exam_file_path,
         TOTAL_ANSWERS     => 0,
         CORRECT_ANSWERS   => 0,
         MISSING_QUESTIONS => [],
         MISSING_ANSWERS   => {}
     );
 
+    # build question and answer map for this exam
+    my %exam_question_answer_map = %{ build_question_answer_map($exam_file_path) };
+
+    # iterate over all questions in the master file
     foreach my $question ( keys %master_question_answer_map ) {
 
         # question not found -> remember as missing and move to the next one
@@ -96,47 +93,58 @@ foreach my $exam_filename ( @ARGV[ 1 .. $#ARGV ] ) {
 # print the score (correct- / total answers) for every file
 foreach my $result_ref (@results) {
 
-    # deference for better readability
-    my %result = %{$result_ref};
-
-    printf( "%-70.70s %02s / %02s\n", $result{FILENAME}, $result{CORRECT_ANSWERS}, $result{TOTAL_ANSWERS} );
+    # format score in a fixed width format:
+    #   70 characters for the file path
+    #   1 whitespace
+    #   2 characters number of correct answers
+    #   1 whitespace
+    #   /
+    #   1 whitespace
+    #   2 characters for total number of questions
+    printf(
+        "%-70.70s %02s / %02s\n",
+        $result_ref->{FILE},
+        $result_ref->{CORRECT_ANSWERS},
+        $result_ref->{TOTAL_ANSWERS}
+    );
 }
 
-# empty line for better readability
-say('');
+# add an empty line for better readability
+print("\n");
 
 # print missing questions and answers for every file
 foreach my $result_ref (@results) {
 
-    # dereference for better readability
-    my %result = %{$result_ref};
-
     # print nothing for complete files
-    if ( !@{ $result{MISSING_QUESTIONS} } && !keys %{ $result{MISSING_ANSWERS} } ) {
+    if ( !@{ $result_ref->{MISSING_QUESTIONS} } && !keys %{ $result_ref->{MISSING_ANSWERS} } ) {
         next;
     }
 
-    say("$result{FILENAME}:");
-    foreach my $missing_question ( @{ $result{MISSING_QUESTIONS} } ) {
+    say("$result_ref->{FILE}:");
+
+    # firstly print all missing questions
+    foreach my $missing_question ( @{ $result_ref->{MISSING_QUESTIONS} } ) {
         say("\tMissing question: $missing_question");
     }
 
-    foreach my $question ( keys %{ $result{MISSING_ANSWERS} } ) {
+    # secondly print missing answers
+    foreach my $question ( keys %{ $result_ref->{MISSING_ANSWERS} } ) {
 
         # deference for better readability
-        my @missing_answers = @{ $result{MISSING_ANSWERS}{$question} };
+        my @missing_answers = @{ $result_ref->{MISSING_ANSWERS}{$question} };
 
         # only print message if there are missing answers
         if ( !@missing_answers ) {
             next;
         }
 
+        # print question for easier "debugging"
         say("\tMissing answers for question: $question");
         for my $missing_answer (@missing_answers) {
             say("\t\t- $missing_answer");
         }
     }
 
-    # print an empty line for better readability
-    say('');
+    # add an empty line for better readability
+    print("\n");
 }
