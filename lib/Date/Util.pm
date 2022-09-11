@@ -15,4 +15,6 @@ sub localtime_string_format ( $format, @localtime ) {
     return sprintf( $format, $year + 1900, $mon + 1, $mday, $hour, $min, $sec );
 }
 
+#####################################################################
+
 1;    # Magic boolean TRUE value required at end of a module
