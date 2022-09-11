@@ -5,31 +5,7 @@ use strict;
 use warnings;
 use experimental 'signatures';
 
-use Exam::ScoringUtil qw(build_question_answer_map fuzzy_search);
-
-#####################################################################
-
-sub resolve_exam_question ( $master_question, %exam_question_answer_map ) {
-
-    # if the master question is found exactly in the exam file return it
-    if ( exists $exam_question_answer_map{$master_question} ) {
-        return $master_question;
-    }
-
-    # otherwise attempt to fuzzy match the master question against all exam questions
-    return fuzzy_search( $master_question, keys %exam_question_answer_map );
-}
-
-sub resolve_exam_answer ( $master_answer, %exam_answer_map ) {
-
-    # if the master answer is found exactly in the exam file return it
-    if ( exists $exam_answer_map{$master_answer} ) {
-        return $master_answer;
-    }
-
-    # otherwise attempt to fuzzy match the master answer against all exam question -> answers
-    return fuzzy_search( $master_answer, keys %exam_answer_map );
-}
+use Exam::ScoringUtil qw(build_question_answer_map resolve_question_answer_key);
 
 #####################################################################
 
@@ -61,9 +37,9 @@ foreach my $exam_file_path ( @ARGV[ 1 .. $#ARGV ] ) {
     # iterate over all questions in the master file
     foreach my $master_question ( keys %master_question_answer_map ) {
 
-        my $exam_question = resolve_exam_question( $master_question, %exam_question_answer_map );
+        my $exam_question = resolve_question_answer_key( $master_question, %exam_question_answer_map );
 
-        # master question was not exactly found in exam file -> remember mapping
+        # master question was found matched character for character in exam file (or not at all) -> remember mapping
         if ( !$exam_question || $master_question ne $exam_question ) {
             $result{MISSING_MASTER_QUESTIONS}->{$master_question} = $exam_question;
 
@@ -85,7 +61,9 @@ foreach my $exam_file_path ( @ARGV[ 1 .. $#ARGV ] ) {
 
         # check master answers against the answers in the exam file
         foreach my $master_answer (@master_answers) {
-            my $exam_answer = resolve_exam_answer( $master_answer, %exam_answers_map );
+            my $exam_answer = resolve_question_answer_key( $master_answer, %exam_answers_map );
+
+            # exam answer could not be found character for character in exam file (or not at all) -> remember as missing
             if ( !$exam_answer || $master_answer ne $exam_answer ) {
                 $result{MISSING_MASTER_ANSWERS}->{$master_question}{$master_answer} = $exam_answer;
             }
