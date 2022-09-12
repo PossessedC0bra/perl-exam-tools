@@ -86,7 +86,7 @@ sub fuzzy_search ( $source_text, @target_texts ) {
 sub normalize ($text) {
 
     # convert whole text to lowercase
-    my $text = lc($text);
+    $text = lc($text);
 
     # remove common stopwords
     $text =~ s { $STOPWORD_REGEX } {}gx;
