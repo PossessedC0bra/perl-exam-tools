@@ -18,8 +18,25 @@ if ( @ARGV < 2 ) {
 my $master_file_path           = $ARGV[0];
 my %master_question_answer_map = %{ build_question_answer_map($master_file_path) };
 
+my %statistics = (
+    TOTAL => {
+        MIN       => scalar keys %master_question_answer_map,
+        MIN_COUNT => 0,
+        AVG       => 0,
+        MAX       => 0,
+        MAX_COUNT => 0,
+    },
+    CORRECT => {
+        MIN       => scalar keys %master_question_answer_map,
+        MIN_COUNT => 0,
+        AVG       => 0,
+        MAX       => 0,
+        MAX_COUNT => 0,
+    }
+);
+
 # store result for each file in this array
-my @results;
+my @results = ();
 
 # score each exam (arguments beyond the first) individually
 foreach my $exam_file_path ( @ARGV[ 1 .. $#ARGV ] ) {
@@ -79,6 +96,43 @@ foreach my $exam_file_path ( @ARGV[ 1 .. $#ARGV ] ) {
         }
 
         $result{TOTAL_ANSWERS}++;
+    }
+
+    # update statistics
+    if ( $statistics{TOTAL}{MIN} > $result{TOTAL_ANSWERS} ) {
+        $statistics{TOTAL}{MIN}       = $result{TOTAL_ANSWERS};
+        $statistics{TOTAL}{MIN_COUNT} = 1;
+    }
+    elsif ( $statistics{TOTAL}{MIN} == $result{TOTAL_ANSWERS} ) {
+        $statistics{TOTAL}{MIN_COUNT}++;
+    }
+
+    $statistics{TOTAL}{AVG} = ( $statistics{TOTAL}{AVG} * @results + $result{TOTAL_ANSWERS} ) / ( @results + 1 );
+
+    if ( $statistics{TOTAL}{MAX} < $result{TOTAL_ANSWERS} ) {
+        $statistics{TOTAL}{MAX}       = $result{TOTAL_ANSWERS};
+        $statistics{TOTAL}{MAX_COUNT} = 1;
+    }
+    elsif ( $statistics{TOTAL}{MAX} == $result{TOTAL_ANSWERS} ) {
+        $statistics{TOTAL}{MAX_COUNT}++;
+    }
+
+    if ( $statistics{CORRECT}{MIN} > $result{TOTAL_ANSWERS} ) {
+        $statistics{CORRECT}{MIN}       = $result{CORRECT_ANSWERS};
+        $statistics{CORRECT}{MIN_COUNT} = 1;
+    }
+    elsif ( $statistics{CORRECT}{MIN} == $result{CORRECT_ANSWERS} ) {
+        $statistics{CORRECT}{MIN_COUNT}++;
+    }
+
+    $statistics{CORRECT}{AVG} = ( $statistics{CORRECT}{AVG} * @results + $result{CORRECT_ANSWERS} ) / ( @results + 1 );
+
+    if ( $statistics{CORRECT}{MAX} < $result{CORRECT_ANSWERS} ) {
+        $statistics{CORRECT}{MAX}       = $result{CORRECT_ANSWERS};
+        $statistics{CORRECT}{MAX_COUNT} = 1;
+    }
+    elsif ( $statistics{CORRECT}{MAX} == $result{CORRECT_ANSWERS} ) {
+        $statistics{CORRECT}{MAX_COUNT}++;
     }
 
     push( @results, \%result );
@@ -147,3 +201,70 @@ foreach my $result_ref (@results) {
     # add an empty line for better readability
     print("\n");
 }
+
+#####################################################################
+# STATISTICS PRINTING
+#####################################################################
+
+print("\n");
+
+say('STATISTICS');
+say( '=' x 80 );
+
+print("\n");
+
+my $rounded_total_avg = sprintf( "%.0f", $statistics{TOTAL}{AVG} );
+say("Average number of questions answered: $rounded_total_avg");
+say("Minimum number of questions answered: $statistics{TOTAL}{MIN} ($statistics{TOTAL}{MIN_COUNT} students)");
+say("Maximum number of questions answered: $statistics{TOTAL}{MAX} ($statistics{TOTAL}{MAX_COUNT} students)");
+
+print("\n");
+
+my $rounded_correct_avg = sprintf( "%.0f", $statistics{CORRECT}{AVG} );
+say("Average number of correct answers: $rounded_correct_avg");
+say("Minimum number of correct answers: $statistics{CORRECT}{MIN} ($statistics{CORRECT}{MIN_COUNT} students)");
+say("Maximum number of correct answers: $statistics{CORRECT}{MAX} ($statistics{CORRECT}{MAX_COUNT} students)");
+
+# sort by exam results by number of correctly answered questions
+@results = sort { $a->{CORRECT_ANSWERS} <=> $b->{CORRECT_ANSWERS} } @results;
+
+print("\n");
+say('Results below expectation:');
+
+my $results_processed = 0;
+my $result_ref_index  = 0;
+my $result_ref        = $results[$result_ref_index];
+while ( $result_ref->{CORRECT_ANSWERS} == 0 ) {
+    printf(
+        "\t%-70.70s %02s / %02s (no correct answers)\n",
+        $result_ref->{FILENAME},
+        $result_ref->{CORRECT_ANSWERS},
+        $result_ref->{TOTAL_ANSWERS}
+    );
+
+    $result_ref = $results[ ++$result_ref_index ];
+}
+
+my $bottom_25_percent = int( (@results) / 4 );
+while ( $result_ref_index < $bottom_25_percent ) {
+    printf(
+        "\t%-70.70s %02s / %02s (bottom 25%% of cohort)\n",
+        $result_ref->{FILENAME},
+        $result_ref->{CORRECT_ANSWERS},
+        $result_ref->{TOTAL_ANSWERS}
+    );
+
+    $result_ref = $results[ ++$result_ref_index ];
+}
+
+while ( $result_ref->{CORRECT_ANSWERS} < $statistics{CORRECT}{AVG} ) {
+    printf(
+        "\t%-70.70s %02s / %02s (below correct average)\n",
+        $result_ref->{FILENAME},
+        $result_ref->{CORRECT_ANSWERS},
+        $result_ref->{TOTAL_ANSWERS}
+    );
+
+    $result_ref = $results[ ++$result_ref_index ];
+}
+
