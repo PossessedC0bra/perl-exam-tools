@@ -5,7 +5,7 @@ use strict;
 use warnings;
 use experimental 'signatures';
 
-use Exam::ScoringUtil qw(build_question_answer_map resolve_question_answer_key);
+use Exam::Util qw(build_question_answer_map resolve_question_answer_key);
 
 #####################################################################
 

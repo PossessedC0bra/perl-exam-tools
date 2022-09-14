@@ -84,3 +84,7 @@ sub load_exam ($file_path) {
     # If the file contents were not a valid exam, return undef to indicate failure
     return undef;
 }
+
+#####################################################################
+
+1;    # Magic boolean TRUE value required at end of a module
