@@ -6,7 +6,7 @@ use warnings;
 use experimental;
 
 use Exporter 'import';
-our @EXPORT = qw(get_stopwords);
+our @EXPORT_OK = qw(get_stopwords);
 
 #####################################################################
 

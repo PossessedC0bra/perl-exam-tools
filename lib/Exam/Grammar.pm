@@ -5,12 +5,12 @@ use strict;
 use warnings;
 use experimental 'signatures';
 
+use Exporter 'import';
+our @EXPORT_OK = qw(load_exam);
+
 use IO::Util 'read_file';
 
 use Regexp::Grammars;
-
-use Exporter 'import';
-our @EXPORT = qw(load_exam);
 
 ################################################################################
 
@@ -84,3 +84,7 @@ sub load_exam ($file_path) {
     # If the file contents were not a valid exam, return undef to indicate failure
     return undef;
 }
+
+#####################################################################
+
+1;    # Magic boolean TRUE value required at end of a module
