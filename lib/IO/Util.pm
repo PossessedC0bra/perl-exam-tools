@@ -6,7 +6,7 @@ use warnings;
 use experimental 'signatures';
 
 use Exporter 'import';
-our @EXPORT = qw(read_file write_file);
+our @EXPORT_OK = qw(read_file write_file);
 
 #####################################################################
 # READ

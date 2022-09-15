@@ -6,7 +6,7 @@ use warnings;
 use experimental 'signatures';
 
 use Exporter 'import';
-our @EXPORT = qw(localtime_string_format);
+our @EXPORT_OK = qw(localtime_string_format);
 
 #####################################################################
 
