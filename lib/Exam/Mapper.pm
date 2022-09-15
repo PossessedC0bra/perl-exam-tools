@@ -1,16 +1,15 @@
-package Exam::ScoringUtil;
+package Exam::Mapper;
 
 use v5.30.3;
 use strict;
 use warnings;
 use experimental 'signatures';
 
-use Exam::Grammar 'load_exam';
-use Text::Util qw(normalize_whitespace remove_stopwords);
-use Text::FuzzyMatcher qw(fuzzy_match)
-
 use Exporter 'import';
-our @EXPORT = qw(build_question_answer_map resolve_question_answer_key);
+our @EXPORT_OK = qw(build_question_answer_map);
+
+use Exam::Grammar    qw(load_exam);
+use Text::Normalizer qw(normalize_whitespace);
 
 #####################################################################
 
@@ -24,7 +23,7 @@ sub build_question_answer_map ($file_path) {
     my %question_answer_map;
 
     foreach my $question_ref ( @{ $exam_content_ref->{QUESTIONS} } ) {
-        my @checked_answers = ();
+        my @checked_answers   = ();
         my @unchecked_answers = ();
 
         foreach my $answer_ref ( @{ $question_ref->{ANSWERS} } ) {
@@ -43,32 +42,6 @@ sub build_question_answer_map ($file_path) {
     }
 
     return \%question_answer_map;
-}
-
-sub resolve_question_answer_key ( $key, %question_answer_map ) {
-
-    # if the master answer is found exactly in the exam file return it
-    if ( exists $question_answer_map{$key} ) {
-        return $key;
-    }
-
-    # otherwise attempt to fuzzy match the master answer against all exam question -> answers
-    return fuzzy_match( $key, keys %question_answer_map );
-}
-
-#####################################################################
-# TEXT NORMALIZATION
-#####################################################################
-
-sub normalize ($text) {
-
-    # convert whole text to lowercase
-    $text = lc($text);
-
-    # remove common stopwords
-    $text = remove_stopwords($text);
-
-    return normalize_whitespace($text);
 }
 
 #####################################################################
