@@ -152,37 +152,42 @@ sub print_missing_questions_and_answers(@results) {
 
     # print missing questions and answers for every file
     foreach my $result_ref (@results) {
+                
+        say("$result_ref->{FILENAME}:");
         
         # dereference for better readability
-        %missing_content = %{ $result_ref->{MISSING_MASTER_CONTENT} };
+        my %missing_content = %{ $result_ref->{MISSING_MASTER_CONTENT} };
 
-        # print nothing for complete files
-        if ( !keys %missing_content ) {
-            next;
-        }
+        foreach my $missing_content_key (keys %missing_content) {
 
-        say("$result_ref->{FILENAME}:");
+            my $master_question = $missing_content_key;
+            my %missing_question_content = % { $missing_content->{$master_question} }
 
-        # firstly print all missing questions
-        foreach my $missing_question ( keys %missing_master_content_map ) {
+            # the exam answer might not or only partially have been found in the exam file
+            if (exists $missing_question_content{QUESTION}) {
+                say("\t- Missing question: '$missing_question'");
 
-            # dereference for better readability
-            %missing_question_content = %{ $missing_content{$missing_question} };
+                # question could not be found in exam file at all -> move on to the next result
+                next if !$missing_question_content{QUESTION};
+                
+                # alternatively print the partially matched exam question
+                say("\t  Used this instead: '$missing_question_content{$missing_question}{QUESTION}'");
+            } 
+            
+            # some answers might not or only partially have been found in the exam file
+            if (exists $missing_question_content{ANSWERS}) {
+                
+                # question was found 1:1 in exam file -> nothing has been printed so far -> print a nice header
+                if (!exists $missing_question_content{QUESTION}) {
+                    say("\t- Missing answers: '$missing_question'");
+                }
 
-            say("\t- Missing question: '$missing_question'");
-
-            # master question could not be mapped at all -> move to the next missing questions content
-            next if !$missing_question_content{$missing_question}{QUESTION};
-
-            say("\t  Used this instead: '$missing_question_content{$missing_question}{QUESTION}'");
-
-            # dereference for better readability
-            my %missing_answer_content = %{ $missing_question_content{$question}{ANSWERS} };
-
-            foreach my $missing_answer ( keys %missing_answer_content ) {
-                say("\t\t- 'Missing answer: $missing_answer'");
-                if ( $missing_answer_content{$missing_answer} ) {
-                    say("\t\t   Used this instead: '$missing_answer_content{$missing_answer}'");
+                # some answers might not or only partially have been found in exam file
+                foreach my $missing_answer ( keys $missing_question_content{ANSWERS} ) {
+                    say("\t\t- 'Missing answer: $missing_answer'");
+                    if ( $missing_answer_content{$missing_answer} ) {
+                        say("\t\t   Used this instead: '$missing_answer_content{$missing_answer}'");
+                    }
                 }
             }
         }
