@@ -26,4 +26,4 @@ jobs:
       - name: Run tests
         run: |
           export PERL5LIB="$PERL5LIB:./lib"
-          prove t
+          prove -v t/*
