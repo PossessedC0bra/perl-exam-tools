@@ -22,7 +22,7 @@ my $END_OF_EXAM_SEPARATOR = '=' x 80 . $NEWLINE;
 
 # check command line arguments
 if ( @ARGV < 1 ) {
-    print("usage: randomize_questions.pl <PATH_TO_MASTER_FILE>");
+    print("usage: ./randomize_questions.pl <PATH_TO_MASTER_FILE>");
     exit(0);
 }
 
