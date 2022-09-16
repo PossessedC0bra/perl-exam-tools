@@ -118,3 +118,89 @@ sub print_statistics (%statistics) {
 #####################################################################
 
 1;    # Magic boolean TRUE value required at end of a module
+
+#####################################################################
+
+=encoding utf8
+
+=head1 NAME
+
+Exam::Scoring::Printer - Printer used while scoring exams
+
+
+=head1 VERSION
+
+This document describes Exam::Scoring::Printer version 1.0.0
+
+
+=head1 SYNOPSIS
+
+    use Exam::Scoring::Printer;
+
+    print_exam_scores(@reports)
+    print_missing_content(@reports)
+    print_statistics(%statistics)
+
+
+=head1 DESCRIPTION
+
+Module providing command line output used during exam scoring.
+
+=head1 INTERFACE
+
+=head2 print_exam_scores(@reports)
+
+Prints an exam score for every report given. Displays the exams file name as well
+as the ratio of correct answers vs total questions answered
+
+=head2 print_missing_content(@reports)
+
+Prints missing content for every report given. Prints missing content for every
+question. That might include the question itself or some of its answers. If a 
+suiteable replacement for the missing content was found using fuzzy text matching
+a question is still reported as missing but with its replacement
+
+=head2 print_statistics(%statistics)
+
+Prints the statistics accumulated during the exam scoring. Includes statistics
+like min, avg and max of correct and total answers.
+
+
+=head1 AUTHOR
+
+Yannick Koller  C<< <yannick.koller@students.fhnw.ch> >>
+
+
+=head1 LICENCE AND COPYRIGHT
+
+Copyright (c) 2022, Yannick Koller C<< <yannick.koller@students.fhnw.ch> >>. All rights reserved.
+
+This module is free software; you can redistribute it and/or
+modify it under the same terms as Perl itself. See L<perlartistic>.
+
+
+=head1 DISCLAIMER OF WARRANTY
+
+BECAUSE THIS SOFTWARE IS LICENSED FREE OF CHARGE, THERE IS NO WARRANTY
+FOR THE SOFTWARE, TO THE EXTENT PERMITTED BY APPLICABLE LAW. EXCEPT WHEN
+OTHERWISE STATED IN WRITING THE COPYRIGHT HOLDERS AND/OR OTHER PARTIES
+PROVIDE THE SOFTWARE "AS IS" WITHOUT WARRANTY OF ANY KIND, EITHER
+EXPRESSED OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
+ALL SUCH WARRANTIES ARE EXPLICITLY DISCLAIMED. THE ENTIRE RISK AS TO THE
+QUALITY AND PERFORMANCE OF THE SOFTWARE IS WITH YOU. SHOULD THE SOFTWARE
+PROVE DEFECTIVE, YOU ASSUME THE COST OF ALL NECESSARY SERVICING, REPAIR,
+OR CORRECTION.
+
+IN NO EVENT UNLESS REQUIRED BY APPLICABLE LAW OR AGREED TO IN WRITING
+WILL ANY COPYRIGHT HOLDER, OR ANY OTHER PARTY WHO MAY MODIFY AND/OR
+REDISTRIBUTE THE SOFTWARE AS PERMITTED BY THE ABOVE LICENCE, BE LIABLE
+FOR DAMAGES, INCLUDING ANY DIRECT, INDIRECT, GENERAL, SPECIAL, INCIDENTAL,
+EXEMPLARY, OR CONSEQUENTIAL DAMAGES, HOWEVER CAUSED AND ON ANY THEORY OF
+LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+NEGLIGENCE OR OTHERWISE) ARISING OUT OF THE USE OR INABILITY TO USE THE
+SOFTWARE (INCLUDING BUT NOT LIMITED TO PROCUREMENT OF SUBSTITUTE GOODS
+OR SERVICES, LOSS OF DATA OR DATA BEING RENDERED INACCURATE, OR LOSSES
+SUSTAINED BY YOU OR THIRD PARTIES, OR A FAILURE OF THE SOFTWARE TO
+OPERATE WITH ANY OTHER SOFTWARE) EVEN IF SUCH HOLDER OR OTHER PARTY HAS
+BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
